@@ -1,6 +1,6 @@
 # pjt-shopai
 
-> AI 리뷰 요약 + 재고 동시성 처리를 핵심으로 한 커머스 플랫폼  
+> AI 리뷰 요약 + 재고 동시성 처리를 핵심으로 한 커머스 플랫폼
 > 5년차 백엔드 개발자 이직 포트폴리오 프로젝트
 
 ---
@@ -12,7 +12,7 @@
 - **AI 리뷰 요약** — Gemini API + 2단계 캐싱(Redis + DB)으로 상품 리뷰를 자동 요약
 - **재고 동시성 처리** — MySQL 비관적 락(SELECT FOR UPDATE)으로 동시 주문 시 overselling 방지
 - **주문 스냅샷** — 주문 시점의 상품명/가격을 별도 저장해 데이터 일관성 보장
-- **GW - AP - DB 서버 분리** — Nginx Gateway에서 인증/라우팅 처리
+- **GW - AP - DB 서버 분리** — Nginx Gateway에서 JWT 인증/라우팅 처리
 
 ---
 
@@ -20,14 +20,28 @@
 
 | 영역 | 기술 |
 |------|------|
-| 백엔드 | Nest.js (TypeScript) |
-| 프론트엔드 | React (Vite + TypeScript) |
+| 백엔드 | NestJS 11 (TypeScript) |
+| 프론트엔드 | React 19 (Vite + TypeScript) |
 | AI | Google Gemini API |
 | 데이터베이스 | MySQL |
 | 캐싱 | Redis |
 | 인프라 | Docker, GitHub Actions |
-| 서버 구조 | Nginx (GW) — Nest.js (AP) — MySQL (DB) |
+| 서버 구조 | Nginx (GW) — NestJS (AP) — MySQL (DB) |
 | 결제 | 포트원 (테스트 모드) |
+
+---
+
+## 🏗️ 서버 아키텍처
+
+```
+클라이언트
+    ↓
+GW 서버 (Nginx) — JWT 검증 (auth_request)
+    ↓
+AP 서버 (NestJS:3030) + Redis
+    ↓
+DB 서버 (MySQL)
+```
 
 ---
 
@@ -35,7 +49,7 @@
 
 ```
 pjt-shopai/
-├── backend/                  # Nest.js 백엔드
+├── backend/                  # NestJS 백엔드
 │   └── src/
 │       ├── common/           # Guards, Filters, Interceptors, Decorators
 │       ├── config/           # 환경 설정
@@ -64,7 +78,8 @@ pjt-shopai/
 ├── docker/
 │   ├── backend.Dockerfile
 │   └── frontend.Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml        # 운영 AP 서버용 (Redis + NestJS)
+├── .env.example
 └── README.md
 ```
 
@@ -73,29 +88,25 @@ pjt-shopai/
 ## ⚙️ 로컬 실행 방법
 
 ### 사전 준비
-- Node.js 18+
-- Docker & Docker Compose
+- Node.js 20+
+- Redis (`brew install redis && brew services start redis`)
+- MySQL (별도 DB 서버 연결)
 
 ### 1. 레포지토리 클론
 
 ```bash
-git clone https://github.com/본인계정/pjt-shopai.git
+git clone https://github.com/Neur0n-dev/pjt-shopai.git
 cd pjt-shopai
 ```
 
 ### 2. 환경변수 설정
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
+# .env 파일에 실제 값 입력
 ```
 
-### 3. MySQL + Redis 실행 (Docker)
-
-```bash
-docker-compose up -d
-```
-
-### 4. 백엔드 실행
+### 3. 백엔드 실행
 
 ```bash
 cd backend
@@ -104,7 +115,7 @@ npm run seed        # 초기 데이터 삽입
 npm run start:dev
 ```
 
-### 5. 프론트엔드 실행
+### 4. 프론트엔드 실행
 
 ```bash
 cd frontend
@@ -115,10 +126,10 @@ npm run dev
 ### 접속 URL
 
 | 서비스 | URL |
-|--------|-----|
+|----------------------|-------------------------------|
 | 프론트엔드 | http://localhost:5173 |
-| 백엔드 API | http://localhost:3000 |
-| Swagger | http://localhost:3000/api-docs |
+| 백엔드 API | http://localhost:3030 |
+| Swagger (관리자 기능) | http://localhost:3030/api-docs |
 
 ---
 
