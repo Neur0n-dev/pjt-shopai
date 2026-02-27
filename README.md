@@ -49,6 +49,11 @@ DB 서버 (MySQL)
 
 ```
 pjt-shopai/
+├── docs/
+│   └── database/
+│       ├── erd/              # ERD 이미지
+│       ├── schema/           # 테이블 정의서 (11개 md 파일)
+│       └── scripts/          # DDL 및 시드 데이터 SQL
 ├── backend/                  # NestJS 백엔드
 │   └── src/
 │       ├── common/           # Guards, Filters, Interceptors, Decorators
