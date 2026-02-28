@@ -19,7 +19,10 @@ export class CreateUserDto {
    * 이메일: 로그인 계정 ID로 사용
    * @IsEmail(): 이메일 형식이 아니면 400 에러 반환
    */
-  @ApiProperty({ description: '이메일 (로그인 ID)', example: 'user@shopai.com' })
+  @ApiProperty({
+    description: '이메일 (로그인 ID)',
+    example: 'user@shopai.com',
+  })
   @IsEmail({}, { message: '올바른 이메일 형식이어야 합니다.' })
   email: string;
 
@@ -44,7 +47,10 @@ export class CreateUserDto {
    * 연락처: 선택 입력 항목
    * @IsOptional(): 요청에 포함되지 않아도 에러 없음
    */
-  @ApiPropertyOptional({ description: '연락처 (선택)', example: '010-1234-5678' })
+  @ApiPropertyOptional({
+    description: '연락처 (선택)',
+    example: '010-1234-5678',
+  })
   @IsOptional()
   @IsString()
   phone?: string;
@@ -53,7 +59,11 @@ export class CreateUserDto {
    * 권한: 기본값 USER, ADMIN 지정 가능
    * @IsEnum(UserRole): 'USER' | 'ADMIN' 외 값이면 400 에러 반환
    */
-  @ApiPropertyOptional({ description: '권한 (기본값: USER)', enum: UserRole, example: UserRole.USER })
+  @ApiPropertyOptional({
+    description: '권한 (기본값: USER)',
+    enum: UserRole,
+    example: UserRole.USER,
+  })
   @IsOptional()
   @IsEnum(UserRole, { message: '권한은 USER 또는 ADMIN이어야 합니다.' })
   role?: UserRole;

@@ -43,7 +43,7 @@ export class AuthService {
       password: hashedPassword,
       name: dto.name,
       phone: dto.phone ?? null,
-      role: dto.role,  // 미입력 시 엔티티 default(USER)로 저장됨
+      role: dto.role, // 미입력 시 엔티티 default(USER)로 저장됨
     });
 
     // 4단계: 비밀번호 제외한 응답 DTO 반환

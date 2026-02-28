@@ -28,7 +28,10 @@ export class AuthController {
    */
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: '회원가입', description: '이메일, 비밀번호, 이름으로 신규 계정을 생성합니다.' })
+  @ApiOperation({
+    summary: '회원가입',
+    description: '이메일, 비밀번호, 이름으로 신규 계정을 생성합니다.',
+  })
   @ApiBody({ type: CreateUserDto })
   @ApiCreatedResponse({ description: '회원가입 성공', type: UserResponseDto })
   @ApiConflictResponse({ description: '이미 사용 중인 이메일 (409)' })
