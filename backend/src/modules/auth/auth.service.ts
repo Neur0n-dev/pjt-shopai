@@ -4,11 +4,16 @@
  * 회원가입, 로그인 등 인증 흐름의 핵심 처리를 담당
  */
 
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { UsersRepository } from '../users/repositories/users.repository';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { LoginDto } from './dto/login.dto';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 /** bcrypt 해싱 강도 (높을수록 안전하지만 느림, 10이 일반적인 기본값) */
 const BCRYPT_SALT_ROUNDS = 10;
@@ -16,8 +21,10 @@ const BCRYPT_SALT_ROUNDS = 10;
 @Injectable()
 export class AuthService {
   constructor(
-    /** UsersModule에서 export한 UsersRepository를 주입받아 DB 접근 */
     private readonly usersRepository: UsersRepository,
+    private readonly refreshTokenRepository: RefreshTokenRepository,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -53,5 +60,53 @@ export class AuthService {
     response.role = savedUser.role;
 
     return response;
+  }
+
+  /**
+   * 로그인 처리
+   * 1. 이메일로 유저 조회 → 없으면 401 UnauthorizedException
+   * 2. bcrypt로 비밀번호 검증 → 틀리면 401 UnauthorizedException
+   * 3. AccessToken 발급 (JWT)
+   * 4. RefreshToken 발급 + DB 저장
+   * 5. AccessToken, RefreshToken 반환
+   */
+  async login(dto: LoginDto) {
+    // 1단계: 이메일로 유저 조회
+    const existingUser = await this.usersRepository.findByEmail(dto.email);
+    if (!existingUser) {
+      throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
+    }
+
+    // 2단계: 비밀번호 검증
+    const isMatch = await bcrypt.compare(dto.password, existingUser.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
+    }
+
+    // 3단계: AccessToken 발급 (payload: uuid, email, role)
+    const payload = { sub: existingUser.uuid, email: existingUser.email, role: existingUser.role };
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+    });
+
+    // 4단계: RefreshToken 발급 + DB 저장
+    const refreshToken = this.jwtService.sign({ sub: existingUser.uuid }, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+    });
+
+    const expiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+    const expiresDate = new Date();
+    expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
+
+    const refreshTokenEntity = new RefreshToken();
+    refreshTokenEntity.userUuid = existingUser.uuid;
+    refreshTokenEntity.tokenValue = refreshToken;
+    refreshTokenEntity.tokenExpiresDate = expiresDate;
+    await this.refreshTokenRepository.save(refreshTokenEntity);
+
+    // 5단계: 토큰 반환
+    return { accessToken, refreshToken };
   }
 }
