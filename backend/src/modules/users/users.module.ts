@@ -10,6 +10,7 @@ import { User } from './entities/user.entity';
 import { UsersRepository } from './repositories/users.repository';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +20,8 @@ import { UsersService } from './users.service';
      * 이걸 해야 UsersRepository에서 @InjectRepository(User) 로 주입받을 수 있음
      */
     TypeOrmModule.forFeature([User]),
+    // JwtAuthGuard 사용을 위해 import
+    AuthModule,
   ],
 
   // HTTP 요청을 받는 컨트롤러 등록
