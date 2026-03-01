@@ -1,7 +1,7 @@
 /**
  * [auth.service.ts]
  * 인증 관련 비즈니스 로직 담당 서비스
- * 회원가입, 로그인 등 인증 흐름의 핵심 처리를 담당
+ * 회원가입, 로그인, 토큰 재발급 등 인증 흐름의 핵심 처리를 담당
  */
 
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
@@ -13,6 +13,7 @@ import { UserResponseDto } from '../users/dto/user-response.dto';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 /** bcrypt 해싱 강도 (높을수록 안전하지만 느림, 10이 일반적인 기본값) */
@@ -108,5 +109,73 @@ export class AuthService {
 
     // 5단계: 토큰 반환
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * 토큰 재발급 처리 (토큰 로테이션)
+   * 1. RefreshToken JWT 서명 검증 → 실패 시 401 UnauthorizedException
+   * 2. DB에서 RefreshToken 존재 여부 확인 → 없으면 401 UnauthorizedException
+   * 3. DB 토큰 만료일 확인 → 만료됐으면 DB 삭제 후 401 UnauthorizedException
+   * 4. 기존 RefreshToken DB에서 삭제 (토큰 로테이션 — 1회용 처리)
+   * 5. 새 AccessToken 발급
+   * 6. 새 RefreshToken 발급 + DB 저장
+   * 7. { accessToken, refreshToken } 반환
+   */
+  async refresh(dto: RefreshDto) {
+    // 1단계: RefreshToken JWT 서명 검증 (서명 불일치 or 만료 시 예외 → 401)
+    let payload: { sub: string };
+    try {
+      payload = this.jwtService.verify(dto.refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    // 2단계: DB에서 RefreshToken 존재 여부 확인 (탈취 후 삭제된 토큰 방어)
+    const isToken = await this.refreshTokenRepository.findByTokenValue(dto.refreshToken);
+    if (!isToken) {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    // 3단계: 만료일 확인 (만료됐으면 DB 삭제 후 401)
+    if (isToken.tokenExpiresDate < new Date()) {
+      await this.refreshTokenRepository.delete(isToken);
+      throw new UnauthorizedException('만료된 토큰입니다.');
+    }
+
+    // 4단계: 기존 RefreshToken DB 삭제 (토큰 로테이션)
+    await this.refreshTokenRepository.delete(isToken);
+
+    // 5단계: 새 AccessToken 발급 (uuid로 유저 조회 후 email, role 포함한 payload 생성)
+    const user = await this.usersRepository.findByUuid(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    const newPayload = { sub: user.uuid, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(newPayload, {
+      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+    });
+
+    // 6단계: 새 RefreshToken 발급 + DB 저장
+    const newRefreshToken = this.jwtService.sign({ sub: user.uuid }, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+    });
+
+    const expiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+    const expiresDate = new Date();
+    expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
+
+    const newRefreshTokenEntity = new RefreshToken();
+    newRefreshTokenEntity.userUuid = user.uuid;
+    newRefreshTokenEntity.tokenValue = newRefreshToken;
+    newRefreshTokenEntity.tokenExpiresDate = expiresDate;
+    await this.refreshTokenRepository.save(newRefreshTokenEntity);
+
+    // 7단계: 새 토큰 반환
+    return { accessToken, refreshToken: newRefreshToken };
   }
 }
