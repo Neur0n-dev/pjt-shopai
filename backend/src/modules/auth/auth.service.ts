@@ -4,7 +4,11 @@
  * 회원가입, 로그인, 토큰 재발급 등 인증 흐름의 핵심 처리를 담당
  */
 
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -75,29 +79,49 @@ export class AuthService {
     // 1단계: 이메일로 유저 조회
     const existingUser = await this.usersRepository.findByEmail(dto.email);
     if (!existingUser) {
-      throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
+      throw new UnauthorizedException(
+        '아이디 또는 비밀번호가 일치하지 않습니다.',
+      );
     }
 
     // 2단계: 비밀번호 검증
     const isMatch = await bcrypt.compare(dto.password, existingUser.password);
     if (!isMatch) {
-      throw new UnauthorizedException('아이디 또는 비밀번호가 일치하지 않습니다.');
+      throw new UnauthorizedException(
+        '아이디 또는 비밀번호가 일치하지 않습니다.',
+      );
     }
 
     // 3단계: AccessToken 발급 (payload: uuid, email, role)
-    const payload = { sub: existingUser.uuid, email: existingUser.email, role: existingUser.role };
+    const payload = {
+      sub: existingUser.uuid,
+      email: existingUser.email,
+      role: existingUser.role,
+    };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+      expiresIn: this.configService.get<string>(
+        'JWT_ACCESS_EXPIRES_IN',
+        '15m',
+      ) as unknown as number,
     });
 
     // 4단계: RefreshToken 발급 + DB 저장
-    const refreshToken = this.jwtService.sign({ sub: existingUser.uuid }, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-    });
+    const refreshToken = this.jwtService.sign(
+      { sub: existingUser.uuid },
+      {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get<string>(
+          'JWT_REFRESH_EXPIRES_IN',
+          '7d',
+        ) as unknown as number,
+      },
+    );
 
-    const expiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+    const expiresIn = this.configService.get<string>(
+      'JWT_REFRESH_EXPIRES_IN',
+      '7d',
+    );
     const expiresDate = new Date();
     expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
 
@@ -133,7 +157,9 @@ export class AuthService {
     }
 
     // 2단계: DB에서 RefreshToken 존재 여부 확인 (탈취 후 삭제된 토큰 방어)
-    const isToken = await this.refreshTokenRepository.findByTokenValue(dto.refreshToken);
+    const isToken = await this.refreshTokenRepository.findByTokenValue(
+      dto.refreshToken,
+    );
     if (!isToken) {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
@@ -156,16 +182,28 @@ export class AuthService {
     const newPayload = { sub: user.uuid, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(newPayload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+      expiresIn: this.configService.get<string>(
+        'JWT_ACCESS_EXPIRES_IN',
+        '15m',
+      ) as unknown as number,
     });
 
     // 6단계: 새 RefreshToken 발급 + DB 저장
-    const newRefreshToken = this.jwtService.sign({ sub: user.uuid }, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-    });
+    const newRefreshToken = this.jwtService.sign(
+      { sub: user.uuid },
+      {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get<string>(
+          'JWT_REFRESH_EXPIRES_IN',
+          '7d',
+        ) as unknown as number,
+      },
+    );
 
-    const expiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+    const expiresIn = this.configService.get<string>(
+      'JWT_REFRESH_EXPIRES_IN',
+      '7d',
+    );
     const expiresDate = new Date();
     expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
 
@@ -178,6 +216,7 @@ export class AuthService {
     // 7단계: 새 토큰 반환
     return { accessToken, refreshToken: newRefreshToken };
   }
+
   /**
    * 로그아웃 처리
    * 1. RefreshToken JWT 서명 검증 → 실패 시 401 UnauthorizedException
@@ -196,7 +235,9 @@ export class AuthService {
     }
 
     // 2단계: DB에서 RefreshToken 조회
-    const isToken = await this.refreshTokenRepository.findByTokenValue(dto.refreshToken);
+    const isToken = await this.refreshTokenRepository.findByTokenValue(
+      dto.refreshToken,
+    );
     if (!isToken) {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
