@@ -29,4 +29,9 @@ export class UsersRepository {
   async save(user: Partial<User>): Promise<User> {
     return this.repository.save(user);
   }
+
+  // 유저 정보 수정
+  async update(uuid: string, fields: Partial<User>): Promise<void> {
+    await this.repository.update({ uuid }, fields);
+  }
 }
