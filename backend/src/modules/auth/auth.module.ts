@@ -13,6 +13,8 @@ import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { RefreshTokenRepository } from './repositories/refresh-token.repository'
     TypeOrmModule.forFeature([RefreshToken]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, RefreshTokenRepository],
+  providers: [AuthService, RefreshTokenRepository, JwtAuthGuard, RolesGuard],
+  // JwtModule, Guard export → 다른 모듈에서 AuthModule import 후 바로 사용 가능
+  exports: [JwtModule, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}
