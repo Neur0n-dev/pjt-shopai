@@ -9,11 +9,15 @@ import {
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UserResponseDto } from '../users/dto/user-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 import { AuthService } from './auth.service';
 
 @ApiTags('Auth')
@@ -37,5 +41,59 @@ export class AuthController {
   @ApiConflictResponse({ description: '이미 사용 중인 이메일 (409)' })
   async signup(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
     return this.authService.signup(dto);
+  }
+
+  /**
+   * POST /auth/login
+   * 로그인 엔드포인트
+   * 성공 시 200 + AccessToken, RefreshToken 반환
+   */
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '로그인',
+    description: '이메일, 비밀번호로 로그인합니다.'
+  })
+  @ApiBody({ type: LoginDto })
+  @ApiOkResponse({ description: '로그인 성공' })
+  @ApiUnauthorizedResponse({ description: '이메일 또는 비밀번호가 다릅니다 (401)' })
+  async login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  /**
+   * POST /auth/refresh
+   * 토큰 재발행 엔드포인트
+   * 성공 시 200 + AccessToken, RefreshToken 반환
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '토큰 재발급',
+    description: 'RefreshToken으로 새 AccessToken과 RefreshToken을 재발급합니다.',
+  })
+  @ApiBody({ type: RefreshDto })
+  @ApiOkResponse({ description: '토큰 재발급 성공' })
+  @ApiUnauthorizedResponse({ description: '유효하지 않거나 만료된 토큰 (401)' })
+  async refresh(@Body() dto: RefreshDto) {
+    return this.authService.refresh(dto);
+  }
+
+  /**
+   * POST /auth/logout
+   * 로그아웃 엔드포인트
+   * 성공 시 200 + AccessToken, RefreshToken 삭제
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '로그아웃',
+    description: 'RefreshToken을 무효화하여 로그아웃합니다.',
+  })
+  @ApiBody({ type: RefreshDto })
+  @ApiOkResponse({ description: '로그아웃 성공' })
+  @ApiUnauthorizedResponse({ description: '유효하지 않거나 만료된 토큰 (401)' })
+  async logout(@Body() dto: RefreshDto) {
+    return this.authService.logout(dto);
   }
 }

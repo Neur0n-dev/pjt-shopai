@@ -18,6 +18,13 @@ export class UsersRepository {
     });
   }
 
+  // UUID로 유저 조회 (유저 정보 확인)
+  async findByUuid(uuid: string): Promise<User | null> {
+    return this.repository.findOne({
+      where: { uuid, deleteFlag: 'N' },
+    });
+  }
+
   // 유저 저장 (회원가입)
   async save(user: Partial<User>): Promise<User> {
     return this.repository.save(user);
