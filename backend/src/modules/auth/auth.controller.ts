@@ -75,7 +75,25 @@ export class AuthController {
   @ApiBody({ type: RefreshDto })
   @ApiOkResponse({ description: '토큰 재발급 성공' })
   @ApiUnauthorizedResponse({ description: '유효하지 않거나 만료된 토큰 (401)' })
-  async Refresh(@Body() dto: RefreshDto) {
+  async refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto);
+  }
+
+  /**
+   * POST /auth/logout
+   * 로그아웃 엔드포인트
+   * 성공 시 200 + AccessToken, RefreshToken 삭제
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '로그아웃',
+    description: 'RefreshToken을 무효화하여 로그아웃합니다.',
+  })
+  @ApiBody({ type: RefreshDto })
+  @ApiOkResponse({ description: '로그아웃 성공' })
+  @ApiUnauthorizedResponse({ description: '유효하지 않거나 만료된 토큰 (401)' })
+  async logout(@Body() dto: RefreshDto) {
+    return this.authService.logout(dto);
   }
 }

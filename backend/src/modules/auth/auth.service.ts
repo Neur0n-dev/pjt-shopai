@@ -178,4 +178,33 @@ export class AuthService {
     // 7단계: 새 토큰 반환
     return { accessToken, refreshToken: newRefreshToken };
   }
+  /**
+   * 로그아웃 처리
+   * 1. RefreshToken JWT 서명 검증 → 실패 시 401 UnauthorizedException
+   * 2. DB에서 RefreshToken 조회 → 없으면 401 UnauthorizedException
+   * 3. DB에서 RefreshToken 삭제
+   * 4. 성공 메시지 반환
+   */
+  async logout(dto: RefreshDto) {
+    // 1단계: RefreshToken JWT 서명 검증
+    try {
+      this.jwtService.verify(dto.refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    // 2단계: DB에서 RefreshToken 조회
+    const isToken = await this.refreshTokenRepository.findByTokenValue(dto.refreshToken);
+    if (!isToken) {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    // 3단계: DB에서 RefreshToken 삭제
+    await this.refreshTokenRepository.delete(isToken);
+
+    // 4단계: 성공 메시지 반환
+    return { message: '로그아웃 되었습니다.' };
+  }
 }
