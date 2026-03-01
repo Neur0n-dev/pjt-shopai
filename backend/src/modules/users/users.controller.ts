@@ -18,6 +18,7 @@ import type { JwtPayload } from '../../common/decorators/current-user.decorator'
 import { UsersService } from './users.service';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -60,5 +61,24 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: '인증 토큰이 없거나 유효하지 않습니다 (401)' })
   async updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateUserDto,): Promise<UserResponseDto> {
     return this.usersService.updateMe(user.sub, dto);
+  }
+
+  /**
+   * PATCH /users/me/password
+   * 내 비밀번호 수정 엔드포인트
+   * 성공 시 200 + 수정된 유저 정보(비밀번호 제외) 반환
+   */
+  @Patch('me/password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '내 비밀번호 수정',
+    description: '새로운 비밀번호로 변경합니다.',
+  })
+  @ApiOkResponse({ description: '내 비밀번호 수정 성공' })
+  @ApiUnauthorizedResponse({ description: '인증 토큰이 없거나 유효하지 않습니다 (401)' })
+  async updatePassword(@CurrentUser() user: JwtPayload, @Body() dto: UpdatePasswordDto): Promise<{ message: string }> {
+    return this.usersService.updatePassword(user.sub, dto);
   }
 }

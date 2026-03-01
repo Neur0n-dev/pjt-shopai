@@ -3,10 +3,19 @@
  * 유저 관련 비즈니스 로직 담당 서비스
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UsersRepository } from './repositories/users.repository';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import * as bcrypt from 'bcrypt';
+
+/** bcrypt 해싱 강도 (높을수록 안전하지만 느림, 10이 일반적인 기본값) */
+const BCRYPT_SALT_ROUNDS = 10;
 
 @Injectable()
 export class UsersService {
@@ -59,5 +68,43 @@ export class UsersService {
     response.role = user.role;
 
     return response;
+  }
+
+  /**
+   * 비밀번호 변경
+   * 1. UUID로 유저 조회 → 없으면 404 NotFoundException
+   * 2. dto.newPassword와 dto.newPasswordConfirm 일치 여부 확인 → 다르면 400 BadRequestException
+   * 3. 새 비밀번호 bcrypt 해싱
+   * 4. DB 비밀번호 업데이트
+   * 5. 성공 메시지 반환
+   */
+  async updatePassword(
+    uuid: string,
+    dto: UpdatePasswordDto,
+  ): Promise<{ message: string }> {
+    // 1단계: UUID로 유저 조회
+    const user = await this.usersRepository.findByUuid(uuid);
+    if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    // 2단계: 새 비밀번호 일치 여부 확인
+    if (dto.newPassword !== dto.newPasswordConfirm) {
+      throw new BadRequestException('새 비밀번호가 일치하지 않습니다.');
+    }
+
+    // 3단계: 새 비밀번호 bcrypt 해싱 (auth.service.ts의 BCRYPT_SALT_ROUNDS 참고)
+    const hashedPassword = await bcrypt.hash(
+      dto.newPassword,
+      BCRYPT_SALT_ROUNDS,
+    );
+
+    // 4단계: DB 비밀번호 업데이트
+    await this.usersRepository.update(uuid, {
+      password: hashedPassword,
+    });
+
+    // 5단계: 성공 메시지 반환
+    return { message: '비밀번호가 변경되었습니다.' };
   }
 }
