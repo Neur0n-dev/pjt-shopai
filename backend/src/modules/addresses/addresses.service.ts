@@ -89,6 +89,27 @@ export class AddressesService {
   }
 
   /**
+   * 대표 배송지 변경
+   * 1. 배송지 존재 여부 확인 (본인 소유 검증)
+   * 2. 기존 대표 배송지 해제
+   * 3. 선택한 배송지를 대표로 설정
+   * 4. 전체 배송지 목록 반환
+   */
+  async setDefaultAddress(uuid: string, addressUuid: string): Promise<AddressResponseDto[]> {
+    // 1. 배송지 존재 여부 확인 (본인 소유 검증)
+    await this.findAddressOrThrow(addressUuid, uuid);
+
+    // 2. 기존 대표 배송지 해제
+    await this.addressesRepository.updateByAddressDefault(uuid, { addressDefault: 'N' });
+
+    // 3. 선택한 배송지를 대표로 설정
+    await this.addressesRepository.setDefaultByAddressUuid(addressUuid);
+
+    // 4. 전체 배송지 목록 반환
+    return this.mapToDto(await this.addressesRepository.findAllByUserUuid(uuid));
+  }
+
+  /**
    * 내 배송지 삭제
    * 1. 배송지 존재 여부 확인 (본인 소유 검증)
    * 2. 배송지 삭제

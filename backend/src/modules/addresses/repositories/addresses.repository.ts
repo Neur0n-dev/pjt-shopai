@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Addresses } from '../entities/addresses.entity';
 
-// addresses 엔티티에 대한 DB 접근 담당
 @Injectable()
 export class AddressesRepository {
   constructor(
@@ -51,13 +50,18 @@ export class AddressesRepository {
     return this.repository.save(addresses);
   }
 
-  // 배송지 소프트 삭제 (delete_flag 'Y' 처리)
-  async deleteByAddressUuid(addressUuid: string): Promise<void> {
-    await this.repository.update({ addressUuid }, { deleteFlag: 'Y' });
-  }
-
   // 대표 배송지 해제 (새 대표 설정 전 기존 대표를 'N'으로 변경)
   async updateByAddressDefault(userUuid: string, fields: { addressDefault: string }): Promise<void> {
     await this.repository.update({ userUuid }, fields);
+  }
+
+  // 특정 배송지를 대표 배송지로 설정
+  async setDefaultByAddressUuid(addressUuid: string): Promise<void> {
+    await this.repository.update({ addressUuid }, { addressDefault: 'Y' });
+  }
+
+  // 배송지 소프트 삭제 (delete_flag 'Y' 처리)
+  async deleteByAddressUuid(addressUuid: string): Promise<void> {
+    await this.repository.update({ addressUuid }, { deleteFlag: 'Y' });
   }
 }

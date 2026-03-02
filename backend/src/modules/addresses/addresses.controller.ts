@@ -122,6 +122,34 @@ export class AddressesController {
   }
 
   /**
+   * PATCH /addresses/me/:addressUuid/default
+   * 대표 배송지 변경 엔드포인트
+   * 성공 시 200 + 내 주소지 리스트 반환
+   */
+  @Patch('me/:addressUuid/default')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '대표 배송지 변경',
+    description: '선택한 배송지를 대표 배송지로 변경 후 전체 목록을 반환합니다.',
+  })
+  @ApiOkResponse({
+    description: '대표 배송지 변경 성공',
+    type: AddressResponseDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: '인증 토큰이 없거나 유효하지 않습니다 (401)',
+  })
+  async setDefaultAddress(
+    @CurrentUser() user: JwtPayload,
+    @Param('addressUuid') addressUuid: string,
+  ): Promise<AddressResponseDto[]> {
+    return this.addressesService.setDefaultAddress(user.sub, addressUuid);
+  }
+
+  /**
    * DELETE /addresses/me/:addressUuid
    * 내 주소지 삭제 엔드포인트
    * 성공 시 200 + 내 주소지 리스트 반환
