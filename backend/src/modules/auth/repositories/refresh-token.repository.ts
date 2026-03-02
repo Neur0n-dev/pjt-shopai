@@ -16,6 +16,11 @@ export class RefreshTokenRepository {
     return this.repository.save(refreshToken);
   }
 
+  // 사용자 UUID로 조회 (로그인 시 기존 토큰 존재 여부 확인)
+  async findByUserUuid(userUuid: string): Promise<RefreshToken | null> {
+    return this.repository.findOne({ where: { userUuid } });
+  }
+
   // 토큰 값으로 조회 (토큰 재발급 시 유효성 검증)
   async findByTokenValue(tokenValue: string): Promise<RefreshToken | null> {
     return this.repository.findOne({

@@ -125,6 +125,12 @@ export class AuthService {
     const expiresDate = new Date();
     expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
 
+    // 기존 리프레시 토큰 존재 시 삭제 (중복 저장 방지)
+    const existingToken = await this.refreshTokenRepository.findByUserUuid(existingUser.uuid);
+    if (existingToken) {
+      await this.refreshTokenRepository.delete(existingToken);
+    }
+
     const refreshTokenEntity = new RefreshToken();
     refreshTokenEntity.userUuid = existingUser.uuid;
     refreshTokenEntity.tokenValue = refreshToken;

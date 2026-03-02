@@ -4,7 +4,7 @@
  * UsersModule을 import해서 UsersRepository를 재사용
  */
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
@@ -18,7 +18,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Module({
   imports: [
-    UsersModule,
+    forwardRef(() => UsersModule),
     // AccessToken/RefreshToken 시크릿을 각 sign() 호출 시 직접 지정하므로 기본 시크릿 없이 등록
     JwtModule.registerAsync({
       inject: [ConfigService],
