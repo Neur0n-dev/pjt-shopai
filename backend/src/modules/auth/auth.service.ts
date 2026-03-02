@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UserResponseDto } from '../users/dto/user-response.dto';
+import { UserRole } from '../users/entities/user.entity';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
@@ -93,18 +94,11 @@ export class AuthService {
     }
 
     // 3단계: AccessToken 발급 (payload: uuid, email, role)
-    const payload = {
-      sub: existingUser.uuid,
-      email: existingUser.email,
-      role: existingUser.role,
-    };
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get<string>(
-        'JWT_ACCESS_EXPIRES_IN',
-        '15m',
-      ) as unknown as number,
-    });
+    const accessToken = this.generateAccessToken(
+      existingUser.uuid,
+      existingUser.email,
+      existingUser.role,
+    );
 
     // 4단계: RefreshToken 발급 + DB 저장
     const refreshToken = this.jwtService.sign(
@@ -118,12 +112,7 @@ export class AuthService {
       },
     );
 
-    const expiresIn = this.configService.get<string>(
-      'JWT_REFRESH_EXPIRES_IN',
-      '7d',
-    );
-    const expiresDate = new Date();
-    expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
+    const expiresDate = this.calculateRefreshExpiresDate();
 
     // 기존 리프레시 토큰 존재 시 삭제 (중복 저장 방지)
     const existingToken = await this.refreshTokenRepository.findByUserUuid(existingUser.uuid);
@@ -185,14 +174,7 @@ export class AuthService {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
 
-    const newPayload = { sub: user.uuid, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(newPayload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get<string>(
-        'JWT_ACCESS_EXPIRES_IN',
-        '15m',
-      ) as unknown as number,
-    });
+    const accessToken = this.generateAccessToken(user.uuid, user.email, user.role);
 
     // 6단계: 새 RefreshToken 발급 + DB 저장
     const newRefreshToken = this.jwtService.sign(
@@ -206,12 +188,7 @@ export class AuthService {
       },
     );
 
-    const expiresIn = this.configService.get<string>(
-      'JWT_REFRESH_EXPIRES_IN',
-      '7d',
-    );
-    const expiresDate = new Date();
-    expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
+    const expiresDate = this.calculateRefreshExpiresDate();
 
     const newRefreshTokenEntity = new RefreshToken();
     newRefreshTokenEntity.userUuid = user.uuid;
@@ -253,5 +230,34 @@ export class AuthService {
 
     // 4단계: 성공 메시지 반환
     return { message: '로그아웃 되었습니다.' };
+  }
+
+  // ============================================================
+  // Private Methods
+  // ============================================================
+
+  /** AccessToken 발급 (uuid, email, role 포함한 payload 서명) */
+  private generateAccessToken(uuid: string, email: string, role: UserRole): string {
+    return this.jwtService.sign(
+      { sub: uuid, email, role },
+      {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: this.configService.get<string>(
+          'JWT_ACCESS_EXPIRES_IN',
+          '15m',
+        ) as unknown as number,
+      },
+    );
+  }
+
+  /** RefreshToken 만료일 계산 (현재 시각 + 설정된 만료 기간) */
+  private calculateRefreshExpiresDate(): Date {
+    const expiresIn = this.configService.get<string>(
+      'JWT_REFRESH_EXPIRES_IN',
+      '7d',
+    );
+    const expiresDate = new Date();
+    expiresDate.setDate(expiresDate.getDate() + parseInt(expiresIn));
+    return expiresDate;
   }
 }

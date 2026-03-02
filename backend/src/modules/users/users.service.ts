@@ -12,6 +12,7 @@ import { UsersRepository } from './repositories/users.repository';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UserRole } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
 /** bcrypt 해싱 강도 (높을수록 안전하지만 느림, 10이 일반적인 기본값) */
@@ -34,12 +35,7 @@ export class UsersService {
     }
 
     // 2단계: 비밀번호 제외한 응답 DTO 반환
-    const response = new UserResponseDto();
-    response.name = user.name;
-    response.email = user.email;
-    response.role = user.role;
-
-    return response;
+    return this.mapToDto(user.name, user.email, user.role);
   }
 
   /**
@@ -56,18 +52,14 @@ export class UsersService {
     }
 
     // 2단계: 전달된 필드만 수정 (미전달 필드는 기존 값 유지)
+    const updatedName = dto.name ?? user.name;
     await this.usersRepository.update(uuid, {
-      name: dto.name ?? user.name,
+      name: updatedName,
       phone: dto.phone ?? user.phone,
     });
 
     // 3단계: 수정된 유저 정보 반환
-    const response = new UserResponseDto();
-    response.name = dto.name ?? user.name;
-    response.email = user.email;
-    response.role = user.role;
-
-    return response;
+    return this.mapToDto(updatedName, user.email, user.role);
   }
 
   /**
@@ -106,5 +98,18 @@ export class UsersService {
 
     // 5단계: 성공 메시지 반환
     return { message: '비밀번호가 변경되었습니다.' };
+  }
+
+  // ============================================================
+  // Private Methods
+  // ============================================================
+
+  /** 유저 엔티티 → UserResponseDto 변환 */
+  private mapToDto(name: string, email: string, role: UserRole): UserResponseDto {
+    const response = new UserResponseDto();
+    response.name = name;
+    response.email = email;
+    response.role = role;
+    return response;
   }
 }
