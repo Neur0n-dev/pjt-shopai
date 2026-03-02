@@ -195,7 +195,7 @@ Gemini API 호출 → Redis + DB 저장 후 반환
 | Week 1 | ✅ 완료 | TypeORM 연결, 환경변수, ValidationPipe, Interceptor, ExceptionFilter, Swagger |
 | Week 2 (auth) | ✅ 완료 | 회원가입·로그인·토큰 재발급·로그아웃 API, JwtAuthGuard, RolesGuard, @CurrentUser() 데코레이터 |
 | Week 2 (users) | ✅ 완료 | GET·PATCH /users/me, PATCH /users/me/password |
-| Week 2 (addresses) | 🔄 진행 중 | 배송지 CRUD 구현 예정 |
+| Week 2 (addresses) | ✅ 완료 | GET·POST·PATCH·DELETE /addresses/me 구현 완료 |
 | Week 3~12 | ⏳ 예정 | 상품, 주문, 결제, AI 요약, 프론트엔드, 인프라 |
 
 ---

@@ -4,7 +4,7 @@
  * "유저 기능에는 이런 Controller, Service, Repository가 있고, 외부에도 이걸 공개할게" 를 선언
  */
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { UsersRepository } from './repositories/users.repository';
@@ -20,8 +20,8 @@ import { AuthModule } from '../auth/auth.module';
      * 이걸 해야 UsersRepository에서 @InjectRepository(User) 로 주입받을 수 있음
      */
     TypeOrmModule.forFeature([User]),
-    // JwtAuthGuard 사용을 위해 import
-    AuthModule,
+    // JwtAuthGuard 사용을 위해 import (순환 의존성 방지)
+    forwardRef(() => AuthModule),
   ],
 
   // HTTP 요청을 받는 컨트롤러 등록
