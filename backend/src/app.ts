@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { errorHandler } from './common/errorHandler';
 
 const app = express();
 
@@ -27,5 +28,10 @@ app.use(morgan(process.env.NODE_ENV === 'prod' ? prodFormat : devFormat));
 // ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ========================
+// Error Handler
+// ========================
+app.use(errorHandler);
 
 export default app;
