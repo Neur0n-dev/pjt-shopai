@@ -1,0 +1,47 @@
+# pjt-shopai
+
+> AI 리뷰 요약 + 재고 동시성 처리를 핵심으로 한 커머스 플랫폼
+
+---
+
+## 📌 프로젝트 소개
+
+단순 기능 구현을 넘어 **설계 / 성능 / 인프라** 역량을 함께 어필하기 위한 커머스 플랫폼입니다.
+
+- **AI 리뷰 요약** — Gemini API + 3단계 캐싱(Redis + DB)으로 상품 리뷰를 자동 요약
+- **재고 동시성 처리** — Prisma 트랜잭션으로 동시 주문 시 overselling 방지
+- **주문 스냅샷** — 주문 시점의 상품명/가격을 별도 저장해 데이터 일관성 보장
+- **GW - AP - DB 서버 분리** — Nginx Gateway에서 라우팅/SSL 처리
+
+---
+
+## 🛠️ 기술 스택
+
+| 영역 | 기술 |
+|------|------|
+| 백엔드 | Express (TypeScript) |
+| 프론트엔드 | React (Vite + TypeScript) |
+| AI | Google Gemini API |
+| 데이터베이스 | MySQL 8 |
+| 캐싱 | Redis |
+| 인프라 | Docker, GitHub Actions |
+| 서버 구조 | Nginx (GW) — Express (AP) — MySQL (DB) |
+| 결제 | 포트원 (테스트 모드) |
+
+---
+
+## 📊 성능 테스트 (k6)
+
+> 추후 작성 예정
+
+---
+
+## 📅 개발 기간
+
+2026년 3월 ~ 2026년 6월 (약 3개월)
+
+---
+
+## 👤 개발자
+
+- GitHub: [@Neur0n](https://github.com/Neur0n-dev)
