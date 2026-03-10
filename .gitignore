@@ -8,7 +8,7 @@
 # Node.js
 ############################
 node_modules/
-dist/
+npm-debug.log*
 
 ############################
 # Environment variables
@@ -16,3 +16,58 @@ dist/
 .env
 .env.*
 !.env.example
+
+############################
+# Logs
+############################
+logs/
+*.log
+
+############################
+# OS
+############################
+.DS_Store
+
+############################
+# Build
+############################
+dist/
+backend/dist/
+frontend/dist/
+
+############################
+# Claude Code
+############################
+.claude/
+CLAUDE.md
+
+############################
+# Docker
+############################
+docker-compose.override.yml
+
+############################
+# Test
+############################
+coverage/
+backend/coverage/
+frontend/coverage/
+
+############################
+# React / Vite
+############################
+frontend/node_modules/
+*.local
+
+############################
+# Prisma
+############################
+backend/prisma/migrations/dev.db
+backend/prisma/*.db
+backend/src/generated/
+
+############################
+# k6 (성능 테스트)
+############################
+k6/results/
+*.k6.json

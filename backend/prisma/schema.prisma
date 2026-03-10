@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================
+// 회원
+// ========================
+
+model t_shopai_users {
+  user_uuid     String   @id @default(uuid()) @db.VarChar(36)
+  user_email    String   @unique @db.VarChar(100)
+  user_password String   @db.VarChar(255)
+  user_name     String   @db.VarChar(50)
+  user_phone    String?  @db.VarChar(20)
+  user_role     Role     @default(USER)
+  delete_flag   String   @default("N") @db.Char(1)
+  created_date  DateTime @default(now())
+  updated_date  DateTime @updatedAt
+
+  addresses      t_shopai_addresses[]
+  refresh_tokens t_shopai_refresh_tokens[]
+  cart_items     t_shopai_cart_items[]
+  orders         t_shopai_orders[]
+  reviews        t_shopai_reviews[]
+  products       t_shopai_products[]
+}
+
+model t_shopai_addresses {
+  address_uuid      String   @id @default(uuid()) @db.VarChar(36)
+  user_uuid         String   @db.VarChar(36)
+  address_name      String   @db.VarChar(50)
+  address_recipient String   @db.VarChar(50)
+  address_zip_code  String   @db.VarChar(10)
+  address_base      String   @db.VarChar(255)
+  address_detail    String?  @db.VarChar(255)
+  address_default   String   @default("N") @db.Char(1)
+  delete_flag       String   @default("N") @db.Char(1)
+  created_date      DateTime @default(now())
+  updated_date      DateTime @updatedAt
+
+  user t_shopai_users @relation(fields: [user_uuid], references: [user_uuid])
+}
+
+model t_shopai_refresh_tokens {
+  token_uuid         String   @id @default(uuid()) @db.VarChar(36)
+  user_uuid          String   @db.VarChar(36)
+  token_value        String   @db.VarChar(500)
+  token_expires_date DateTime
+  created_date       DateTime @default(now())
+  updated_date       DateTime @updatedAt
+
+  user t_shopai_users @relation(fields: [user_uuid], references: [user_uuid])
+}
+
+// ========================
+// 상품
+// ========================
+
+model t_shopai_categories {
+  category_uuid        String   @id @default(uuid()) @db.VarChar(36)
+  category_parent_uuid String?  @db.VarChar(36)
+  category_name        String   @unique @db.VarChar(50)
+  category_slug        String   @unique @db.VarChar(50)
+  category_sort_order  Int
+  category_depth       Int      @db.TinyInt
+  delete_flag          String   @default("N") @db.Char(1)
+  created_date         DateTime @default(now())
+  updated_date         DateTime @updatedAt
+
+  parent   t_shopai_categories?  @relation("CategoryHierarchy", fields: [category_parent_uuid], references: [category_uuid])
+  children t_shopai_categories[] @relation("CategoryHierarchy")
+  products t_shopai_products[]
+}
+
+model t_shopai_products {
+  product_uuid           String        @id @default(uuid()) @db.VarChar(36)
+  user_uuid              String        @db.VarChar(36)
+  category_uuid          String        @db.VarChar(36)
+  product_name           String        @db.VarChar(255)
+  product_description    String?       @db.Text
+  product_ai_description String?       @db.Text
+  product_price          Int
+  product_stock          Int
+  product_image          String?       @db.VarChar(500)
+  product_status         ProductStatus @default(ACTIVE)
+  delete_flag            String        @default("N") @db.Char(1)
+  created_date           DateTime      @default(now())
+  updated_date           DateTime      @updatedAt
+
+  user             t_shopai_users              @relation(fields: [user_uuid], references: [user_uuid])
+  category         t_shopai_categories         @relation(fields: [category_uuid], references: [category_uuid])
+  cart_items       t_shopai_cart_items[]
+  order_items      t_shopai_order_items[]
+  reviews          t_shopai_reviews[]
+  review_summaries t_shopai_review_summaries[]
+}
+
+// ========================
+// 주문/결제
+// ========================
+
+model t_shopai_cart_items {
+  cart_item_uuid     String   @id @default(uuid()) @db.VarChar(36)
+  user_uuid          String   @db.VarChar(36)
+  product_uuid       String   @db.VarChar(36)
+  cart_item_quantity Int
+  created_date       DateTime @default(now())
+  updated_date       DateTime @updatedAt
+
+  user    t_shopai_users    @relation(fields: [user_uuid], references: [user_uuid])
+  product t_shopai_products @relation(fields: [product_uuid], references: [product_uuid])
+}
+
+model t_shopai_orders {
+  order_uuid             String      @id @default(uuid()) @db.VarChar(36)
+  user_uuid              String      @db.VarChar(36)
+  order_number           String      @unique @db.VarChar(50)
+  order_status           OrderStatus @default(PENDING)
+  order_total_amount     Int
+  order_recipient_name   String      @db.VarChar(50)
+  order_recipient_phone  String      @db.VarChar(20)
+  order_delivery_address String      @db.VarChar(500)
+  delete_flag            String      @default("N") @db.Char(1)
+  created_date           DateTime    @default(now())
+  updated_date           DateTime    @updatedAt
+
+  user        t_shopai_users         @relation(fields: [user_uuid], references: [user_uuid])
+  order_items t_shopai_order_items[]
+  payment     t_shopai_payments?
+}
+
+model t_shopai_order_items {
+  item_uuid          String   @id @default(uuid()) @db.VarChar(36)
+  order_uuid         String   @db.VarChar(36)
+  product_uuid       String   @db.VarChar(36)
+  item_product_name  String   @db.VarChar(255)
+  item_product_price Int
+  item_quantity      Int
+  item_subtotal      Int
+  item_reviewed      String   @default("N") @db.Char(1)
+  delete_flag        String   @default("N") @db.Char(1)
+  created_date       DateTime @default(now())
+  updated_date       DateTime @updatedAt
+
+  order   t_shopai_orders   @relation(fields: [order_uuid], references: [order_uuid])
+  product t_shopai_products @relation(fields: [product_uuid], references: [product_uuid])
+  reviews t_shopai_reviews[]
+}
+
+model t_shopai_payments {
+  payment_uuid         String        @id @default(uuid()) @db.VarChar(36)
+  order_uuid           String        @unique @db.VarChar(36)
+  payment_imp_uid      String        @unique @db.VarChar(100)
+  payment_merchant_uid String        @unique @db.VarChar(50)
+  payment_amount       Int
+  payment_method       String        @db.VarChar(100)
+  payment_status       PaymentStatus @default(PENDING)
+  payment_receipt_url  String?       @db.VarChar(500)
+  payment_fail_reason  String?       @db.VarChar(255)
+  created_date         DateTime      @default(now())
+  updated_date         DateTime      @updatedAt
+
+  order t_shopai_orders @relation(fields: [order_uuid], references: [order_uuid])
+}
+
+// ========================
+// AI 기능
+// ========================
+
+model t_shopai_reviews {
+  review_uuid    String   @id @default(uuid()) @db.VarChar(36)
+  user_uuid      String   @db.VarChar(36)
+  product_uuid   String   @db.VarChar(36)
+  item_uuid      String   @db.VarChar(36)
+  review_rating  Int
+  review_content String   @db.Text
+  delete_flag    String   @default("N") @db.Char(1)
+  created_date   DateTime @default(now())
+  updated_date   DateTime @updatedAt
+
+  user             t_shopai_users              @relation(fields: [user_uuid], references: [user_uuid])
+  product          t_shopai_products           @relation(fields: [product_uuid], references: [product_uuid])
+  order_item       t_shopai_order_items        @relation(fields: [item_uuid], references: [item_uuid])
+  review_summaries t_shopai_review_summaries[]
+}
+
+model t_shopai_review_summaries {
+  summary_uuid     String   @id @default(uuid()) @db.VarChar(36)
+  product_uuid     String   @db.VarChar(36)
+  last_review_uuid String   @db.VarChar(36)
+  summary_content  String   @db.Text
+  summary_count    Int
+  expires_date     DateTime
+  created_date     DateTime @default(now())
+  updated_date     DateTime @updatedAt
+
+  product     t_shopai_products @relation(fields: [product_uuid], references: [product_uuid])
+  last_review t_shopai_reviews  @relation(fields: [last_review_uuid], references: [review_uuid])
+}
+
+// ========================
+// Enum
+// ========================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+  FAILED
+}
