@@ -14,6 +14,15 @@ const options = {
         description: '로컬 개발 서버',
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   },
   apis: ['./src/**/*.ts'],
 };

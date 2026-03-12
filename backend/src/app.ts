@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './common/swagger';
 import { errorHandler } from './common/errorHandler';
+import authRouter from './modules/auth/auth.route';
 
 const app = express();
 
@@ -35,6 +36,11 @@ app.use(express.urlencoded({ extended: true }));
 // Swagger
 // ========================
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// ========================
+// Routes
+// ========================
+app.use('/api/auth', authRouter);
 
 // ========================
 // Error Handler
