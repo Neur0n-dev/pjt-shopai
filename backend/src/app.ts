@@ -6,6 +6,7 @@ import { swaggerSpec } from './common/swagger';
 import { errorHandler } from './common/errorHandler';
 import authRouter from './modules/auth/auth.route';
 import userRouter from './modules/user/user.route';
+import addressRouter from './modules/address/address.route';
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // ========================
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
+app.use('/api/addresses', addressRouter);
 
 // ========================
 // Error Handler
