@@ -1,12 +1,13 @@
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './common/swagger';
 import { errorHandler } from './common/errorHandler';
-import authRouter from './modules/auth/auth.route';
-import userRouter from './modules/user/user.route';
+import { swaggerSpec } from './common/swagger';
 import addressRouter from './modules/address/address.route';
+import authRouter from './modules/auth/auth.route';
+import categoryRouter from './modules/category/category.route';
+import userRouter from './modules/user/user.route';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/addresses', addressRouter);
+app.use('/api/categories', categoryRouter);
 
 // ========================
 // Error Handler
