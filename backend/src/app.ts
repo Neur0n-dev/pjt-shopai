@@ -7,6 +7,7 @@ import { swaggerSpec } from './common/swagger';
 import addressRouter from './modules/address/address.route';
 import authRouter from './modules/auth/auth.route';
 import categoryRouter from './modules/category/category.route';
+import productRouter from './modules/product/product.route';
 import userRouter from './modules/user/user.route';
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/addresses', addressRouter);
 app.use('/api/categories', categoryRouter);
+app.use('/api/products', productRouter);
 
 // ========================
 // Error Handler
