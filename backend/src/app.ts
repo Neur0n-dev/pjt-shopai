@@ -6,6 +6,7 @@ import { errorHandler } from './common/errorHandler';
 import { swaggerSpec } from './common/swagger';
 import addressRouter from './modules/address/address.route';
 import authRouter from './modules/auth/auth.route';
+import cartRouter from './modules/cart/cart.route';
 import categoryRouter from './modules/category/category.route';
 import productRouter from './modules/product/product.route';
 import userRouter from './modules/user/user.route';
@@ -49,6 +50,7 @@ app.use('/api/user', userRouter);
 app.use('/api/addresses', addressRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
+app.use('/api/carts', cartRouter);
 
 // ========================
 // Error Handler
